@@ -9,8 +9,8 @@ export const lists = ref([] as any)
 export const getOwnedLists = () => {
     try {
         const q = query(collection(db, 'lists'), where("owner", "==", user.value.uid));
-        onSnapshot(q, ({ docs }: any) => {
-            lists.value = docs.map((doc: any) => {
+        onSnapshot(q, async ({ docs }: any) => {
+            lists.value = await docs.map((doc: any) => {
                 doc = {
                     ...doc.data(),
                     id: doc.id,
@@ -18,6 +18,7 @@ export const getOwnedLists = () => {
                 }
                 return doc
             })
+            console.log(lists.value);
         })
         return lists
 

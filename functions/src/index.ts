@@ -11,7 +11,7 @@ admin.initializeApp();
 // // Start writing Firebase Functions
 // // https://firebase.google.com/docs/functions/typescript
 //
-export const search = functions.https.onRequest(async (request, response) => {
+export const search = functions.region('europe-west1').https.onRequest(async (request, response) => {
     requestify.get(`${process.env.SEARCH_URL}${process.env.SEARCH_TOKEN}&query=${request.body.query}`)
         .then(function (res: any) {
             // Get the response body (JSON parsed or jQuery object for XMLs)

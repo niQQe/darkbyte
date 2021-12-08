@@ -46,7 +46,7 @@
 					:key="list.id"
 					class="px-2 mt-2 w-full flex items-center"
 				>
-					<list-card :list="list"></list-card>
+					<list-card v-if="list.id" :list="list"></list-card>
 				</div>
 			</div>
 		</div>
@@ -66,6 +66,10 @@ export default defineComponent({
 	},
 	setup() {
 		const router = useRouter();
+
+		watch(lists, (v) => {
+			console.log(v);
+		});
 
 		const handleGotoList = (list: any) => {
 			currentList.value = list;

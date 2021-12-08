@@ -121,7 +121,7 @@ export default defineComponent({
 
 		const handleNameSave = async () => {
 			props.list.name = listName.value;
-			if (props.list.id === currentList.value.id) currentList.value.name = listName.value;
+			if (props.list.id === currentList.value?.id) currentList.value.name = listName.value;
 			await updateListName(props.list.id, listName.value);
 			changeListName.value = false;
 		};
