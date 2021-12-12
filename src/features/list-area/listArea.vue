@@ -5,7 +5,7 @@
 		<list-user-content>
 			<list-user-actions />
 			<list-posts v-if="posts.length" />
-			<list-empty-placeholder v-else />
+			<list-empty-placeholder v-if="!posts.length && currentList.owner == user.uid" />
 		</list-user-content>
 	</div>
 </template>
@@ -13,10 +13,14 @@
 <script lang="ts">
 import { defineComponent, onMounted, watch, ref, onBeforeUnmount } from 'vue';
 import { getPosts } from '@/composables/getPosts';
+import { user } from '@/global/user';
 import { posts, search } from '@/global/posts';
 import { useRoute } from 'vue-router';
 import { currentList } from '@/global/currents';
 import { getSingleList } from '@/composables/getSingleList';
+import { isFollowing } from '@/global/data';
+import { getFollowing } from '@/composables/getFollowing';
+import { getIfFollow } from '@/composables/getIfFollow';
 import titleBar from '../title-bar/titleBar.vue';
 import listPresentation from './listPresentation.vue';
 import listBackdrop from './listBackdrop.vue';
@@ -46,36 +50,27 @@ export default defineComponent({
 			route,
 			async () => {
 				if (route.path.includes('list')) {
-					await handleGetPosts();
+					await handleGetListData();
 				}
 			},
 			{ deep: true }
 		);
 
-		const handleGetPosts = async () => {
+		const handleGetListData = async () => {
 			loading.value = true;
 			search.value = '';
 			const res = getPosts(route.params.id as string);
-			watch(
-				res,
-				(v) => {
-					if (v) posts.value = res.value;
-				},
-				{ deep: true }
-			);
+
 			currentList.value = await getSingleList(route.params.id as string);
-			posts.value = res.value;
+			currentList.value.followers = await getFollowing(route.params.id as string);
+			console.log('currentlist');
+			getIfFollow(currentList.value.id);
+
 			loading.value = false;
 		};
 
 		onMounted(async () => {
-			if (!posts.value.length) {
-				console.log('inne');
-				loading.value = true;
-				currentList.value = await getSingleList(route.params.id as string);
-				handleGetPosts();
-				loading.value = false;
-			}
+			await handleGetListData();
 		});
 
 		onBeforeUnmount(() => {
@@ -85,6 +80,8 @@ export default defineComponent({
 
 		return {
 			posts,
+			user,
+			currentList,
 			loading,
 		};
 	},

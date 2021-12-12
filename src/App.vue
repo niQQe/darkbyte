@@ -2,7 +2,7 @@
 	<modal v-if="showModal"></modal>
 	<title-bar></title-bar>
 	<left-nav v-if="authenticated"></left-nav>
-	<div class="flex" style="margin-left: 232px; width: calc(100% - 232px); overflow: hidden; height: 100%">
+	<div class="flex" v-if="!loading" style="margin-left: 232px; width: calc(100% - 232px); overflow: hidden; height: 100%">
 		<!-- <top-bar></top-bar> -->
 		<router-view></router-view>
 	</div>
@@ -13,15 +13,18 @@ import { defineComponent } from 'vue';
 
 import { showModal } from './global/modal';
 import { useRouter } from 'vue-router';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { onMounted, ref } from 'vue';
+import { user as userInfo } from '@/global/user';
+import { getOwnedLists } from './composables/getOwnedLists';
+import { authenticated } from './global/auth';
+import { getDisplayNameById } from '@/composables/getDisplayName';
+import { ownedLists, followedLists } from '@/global/data';
+import { getFollowedLists } from './composables/getFollowedLists';
+import { getFriendRequests } from './composables/getFriendRequests';
 import leftNav from './features/left-nav/leftNav.vue';
 import titleBar from './features/title-bar/titleBar.vue';
 import modal from './components/modal.vue';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { onMounted, ref, watch } from 'vue';
-import { user as userInfo } from '@/global/user';
-import { getOwnedLists } from './composables/getOwnedLists';
-import { ownedLists } from './global/data';
-import { getNicknameById } from '@/composables/getNickname';
 export default defineComponent({
 	name: 'App',
 	components: {
@@ -32,26 +35,26 @@ export default defineComponent({
 	setup() {
 		const router = useRouter();
 		const auth = getAuth();
-		const authenticated = ref(false);
+		const loading = ref(true);
 
 		onMounted(async () => {
 			onAuthStateChanged(auth, async (user) => {
 				if (user) {
+					loading.value = true;
 					userInfo.value = { ...user };
-					const ownedListResponse = await getOwnedLists();
-					watch(ownedListResponse, (v) => {
-						if (v) ownedLists.value = ownedListResponse.value;
-					});
-					const nickname = await getNicknameById(user.uid);
-					userInfo.value = { ...userInfo.value, nickname };
+					await getOwnedLists({ uid: user.uid, endLocation: ownedLists });
+					await getFollowedLists({ uid: user.uid, endLocation: followedLists });
+					getFriendRequests();
+					userInfo.value = { ...userInfo.value, displayname: await getDisplayNameById(user.uid) };
 
 					authenticated.value = true;
+					loading.value = false;
 				} else {
-					router.push('/login');
+					router.push('/');
 				}
 			});
 		});
-		return { showModal, authenticated };
+		return { showModal, authenticated, loading };
 	},
 });
 </script>

@@ -28,6 +28,7 @@
 				<span class="font-size:14px;"> {{ post.postType === 'url' ? 'Copy URL' : 'Copy text' }}</span>
 			</div>
 			<div
+				v-if="post.owner === user.uid"
 				@click.stop="handleRemovePost"
 				class="flex items-center text-white hover:bg-white hover:bg-opacity-20 space-x-4 py-1.5 px-3"
 			>
@@ -42,6 +43,7 @@ import { defineComponent, ref, nextTick } from 'vue';
 import { activeIndex } from './postcCardOptionsHandler';
 import { deletePost } from '@/composables/deletePost';
 import { currentList } from '@/global/currents';
+import { user } from '@/global/user';
 
 export default defineComponent({
 	props: {
@@ -56,7 +58,6 @@ export default defineComponent({
 	setup(props: Record<string, any>) {
 		const show = ref(false);
 		const handleRemovePost = async () => {
-			console.log(props.post);
 			await deletePost(currentList.value.id, props.post.id);
 		};
 
@@ -73,7 +74,7 @@ export default defineComponent({
 			}
 		};
 		const postCardSettingsActive = ref('');
-		return { activeIndex, postCardSettingsActive, show, hideOptions, handleRemovePost, handleCopyToClipboard };
+		return { activeIndex, postCardSettingsActive, show, hideOptions, handleRemovePost, handleCopyToClipboard, user };
 	},
 });
 </script>

@@ -1,24 +1,21 @@
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, onSnapshot } from "firebase/firestore";
 import { db } from '@/firebase/config'
-import { ref } from 'vue'
-import { user } from '@/global/user'
-
-export const getFollowedLists = () => {
-    console.log(user.value);
-    const isPending = ref(false)
-    const lists = ref([] as any)
+export const getFollowedLists = async ({ uid, endLocation }: { uid: string, endLocation: any }) => {
+    console.log('uid');
     try {
-        const q = query(collection(db, 'lists'), where("owner", "==", user.value.uid));
-        onSnapshot(q, ({ docs }: any) => {
-            lists.value = docs.map((doc: any) => {
+        onSnapshot(query(collection(db, `users/${uid}/following`)), ({ docs }: any) => {
+            console.log('following');
+            console.log(docs);
+            endLocation.value = docs.map((doc: any) => {
                 doc = {
                     ...doc.data(),
-                    id: doc.id
+                    id: doc.id,
+                    created: new Date(doc.data().date.seconds * 1000)
                 }
                 return doc
             })
         })
-        return lists
+
 
     } catch (e) {
         console.log(e);

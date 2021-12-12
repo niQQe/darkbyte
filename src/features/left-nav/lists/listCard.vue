@@ -3,8 +3,11 @@
 		@mouseenter="handleMouseEnter"
 		@mouseleave="handleMouseLeave"
 		@click="showSettingsButton = true"
-		class="flex items-center w-full hover:text-white text-sm cursor-default"
-		:class="{ 'text-white': (currentListOption.id === list.id && showSettings) || $route.params.id === list.id }"
+		class="px-4 flex items-center w-full hover:text-white text-sm cursor-default"
+		:class="{
+			'text-white': (currentListOption.id === list.id && showSettings) || $route.params.id === list.id,
+			'pointer-events-none bg-red-500 bg-opacity-20': isBeingRemoved,
+		}"
 		style="height: 35px"
 	>
 		<div v-if="changeListName">
@@ -17,7 +20,7 @@
 				v-model="listName"
 			/>
 		</div>
-		<div v-else class="flex items-center w-full">
+		<div v-else class="flex items-center w-full" :class="{ 'text-red-400': isBeingRemoved }">
 			{{ list.name }}
 			<span v-if="list.mutual" style="font-size: 16px" class="ml-3 material-icons-round"> group </span>
 			<span v-if="list.private" style="font-size: 16px" class="ml-3 material-icons-round"> visibility_off </span>
@@ -41,12 +44,13 @@
 			</button>
 			<div
 				class="absolute shadow-md text-sm space-y-4 flex flex-col top-10 rounded-sm z-30 py-2"
-				style="background: rgb(34, 34, 34); right: 0px; min-width: 150px"
+				style="background: rgb(34, 34, 34); left: 0px; min-width: 200px"
 				v-show="currentListOption.id === list.id && showSettings"
 				@mouseleave="listSettingActiveId = null"
 				v-click-away="handleClickAway"
 			>
 				<div
+					v-if="user.uid === list.owner"
 					@click.stop="setMutual(list.id, !list.mutual)"
 					class="flex justify-between items-center w-full text-white hover:bg-white hover:bg-opacity-20 space-x-4 py-1.5 px-3"
 				>
@@ -54,6 +58,7 @@
 					<span v-if="list.mutual" class="material-icons ml-auto" style="font-size: 16px">check</span>
 				</div>
 				<div
+					v-if="user.uid === list.owner"
 					@click.stop="setPrivate(list.id, !list.private)"
 					class="flex justify-between items-center w-full text-white hover:bg-white hover:bg-opacity-20 space-x-4 py-1.5 px-3"
 				>
@@ -61,16 +66,25 @@
 					<span v-if="list.private" class="material-icons ml-auto" style="font-size: 16px">check</span>
 				</div>
 				<div
+					v-if="user.uid === list.owner"
 					@click.stop="handleChangeListName"
 					class="flex items-center text-white hover:bg-white hover:bg-opacity-20 space-x-4 py-1.5 px-3"
 				>
 					<span class="font-size:14px;">Change name</span>
 				</div>
 				<div
+					v-if="user.uid === list.owner"
 					@click.stop="handleDeleteList"
 					class="flex items-center text-white hover:bg-white hover:bg-opacity-20 space-x-4 py-1.5 px-3"
 				>
 					<span class="font-size:14px;">Delete</span>
+				</div>
+				<div
+					v-else
+					@click.stop="handleUnFollow"
+					class="flex items-center text-white hover:bg-white hover:bg-opacity-20 space-x-4 py-1.5 px-3"
+				>
+					<span class="font-size:14px;">Remove list from library</span>
 				</div>
 			</div>
 		</div>
@@ -87,6 +101,8 @@ import { useRouter } from 'vue-router';
 import { currentModal } from '@/global/modal';
 import { setMutual } from '@/composables/setMutal';
 import { setPrivate } from '@/composables/setPrivate';
+import { user } from '@/global/user';
+import { setUnFollow } from '@/composables/setUnFollow';
 
 export default defineComponent({
 	props: {
@@ -104,6 +120,7 @@ export default defineComponent({
 		const changeListName = ref(false);
 		const listName = ref('');
 		const inputRef = ref();
+		const isBeingRemoved = ref(false);
 
 		const handleOpenListSettings = () => {
 			currentListOption.value = props.list;
@@ -117,6 +134,13 @@ export default defineComponent({
 		const handleMouseEnter = () => {
 			listSettingActiveId.value = props.list.id;
 			showSettingsButton.value = true;
+		};
+
+		const handleUnFollow = async () => {
+			isBeingRemoved.value = true;
+			await setUnFollow(props.list.id);
+			showSettings.value = false;
+			router.push(`/profile/${user.value.uid}`);
 		};
 
 		const handleNameSave = async () => {
@@ -165,6 +189,7 @@ export default defineComponent({
 		};
 
 		return {
+			user,
 			listSettingActive,
 			setPrivate,
 			currentListOption,
@@ -181,6 +206,8 @@ export default defineComponent({
 			handleNameSave,
 			handleDeleteList,
 			setMutual,
+			handleUnFollow,
+			isBeingRemoved,
 			listSettingActiveId,
 		};
 	},

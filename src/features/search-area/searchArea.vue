@@ -102,17 +102,14 @@ export default defineComponent({
 
 		watch(search, async (searchVal) => {
 			if (searchVal.length > 3) {
-				requestify
-					.post(process.env.VUE_APP_SEARCH_URL, {
-						query: searchVal,
-					})
-					.then(function (response: any) {
-						console.log(response.getBody());
-						// Get the response body (JSON parsed or jQuery object for XMLs)
-						searchResult.value = response.getBody().results;
-					});
+				const response = await requestify.post(`${process.env.VUE_APP_SEARCH_URL}`, {
+					query: searchVal,
+				});
+
+				searchResult.value = response.getBody().results;
 			}
 		});
+		
 		onMounted(() => {
 			inputRef.value.focus();
 		});
@@ -120,7 +117,6 @@ export default defineComponent({
 			listsResult,
 			usersResult,
 			search,
-			searchResult,
 			inputRef,
 		};
 	},

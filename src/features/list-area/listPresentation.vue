@@ -29,17 +29,22 @@
 				</div>
 			</div>
 		</div>
-		<div class="flex space-y-3 mr-5" v-if="listThumbs">
+		<div class="flex space-y-3 mr-5" v-if="currentList.listThumbs">
 			<div class="w-52 h-52 flex flex-col rounded-md overflow-hidden shadow-2xl">
-				<div v-if="listThumbs.length === 0" class="flex w-full h-full bg-black bg-opacity-50">
+				<div v-if="currentList.listThumbs.length === 0" class="flex w-full h-full bg-black bg-opacity-50">
 					<span class="material-icons m-auto text-white" style="font-size: 82px"> link </span>
 				</div>
-				<div v-else-if="listThumbs.length < 4" style="height: 100%">
-					<img style="object-fit: cover; width: 100%; height: 100%" :src="listThumbs[0]" alt="" />
+				<div v-else-if="currentList.listThumbs.length < 4" style="height: 100%">
+					<img style="object-fit: cover; width: 100%; height: 100%" :src="currentList.listThumbs[0]" alt="" />
 				</div>
 				<div v-else>
 					<div class="h-full flex" style="height: 104px">
-						<img style="object-fit: cover; width: 50%" v-if="listThumbs[0].length" :src="listThumbs[0]" alt="" />
+						<img
+							style="object-fit: cover; width: 50%"
+							v-if="currentList.listThumbs[0].length"
+							:src="currentList.listThumbs[0]"
+							alt=""
+						/>
 						<div
 							style="width: 100%; height: 100%; background-image: linear-gradient(#27125871, rgb(19, 18, 18))"
 							class="bg-black bg-opacity-60 flex"
@@ -48,7 +53,12 @@
 							<span class="material-icons m-auto text-white" style="font-size: 32px"> link </span>
 						</div>
 
-						<img style="object-fit: cover; width: 50%" v-if="listThumbs[1].length" :src="listThumbs[1]" alt="" />
+						<img
+							style="object-fit: cover; width: 50%"
+							v-if="currentList.listThumbs[1].length"
+							:src="currentList.listThumbs[1]"
+							alt=""
+						/>
 						<div
 							style="width: 100%; height: 100%; background-image: linear-gradient(#27125871, rgb(19, 18, 18))"
 							class="bg-black bg-opacity-60 flex"
@@ -60,9 +70,9 @@
 					<div class="flex h-full" style="height: 104px">
 						<img
 							width="80"
-							v-if="listThumbs[2].length"
+							v-if="currentList.listThumbs[2].length"
 							style="object-fit: cover; width: 50%"
-							:src="listThumbs[2]"
+							:src="currentList.listThumbs[2]"
 							alt=""
 						/>
 						<div
@@ -75,8 +85,8 @@
 						<img
 							width="80"
 							style="object-fit: cover; width: 50%"
-							v-if="listThumbs[3].length"
-							:src="listThumbs[3]"
+							v-if="currentList.listThumbs[3].length"
+							:src="currentList.listThumbs[3]"
 							alt=""
 						/>
 						<div
@@ -90,18 +100,32 @@
 				</div>
 			</div>
 		</div>
-		<div class="font-medium flex flex-col relative z-10 mt-auto" v-if="user">
-			<div class="text-xs text-white mb-1">List</div>
+		<div class="font-medium flex flex-col relative z-10 mt-auto" v-if="currentList">
 			<div class="text-8xl text-white">{{ currentList.name }}</div>
-			<div class="text-white text-sm mb-1 mt-2 leading-loose">
-				<span class="font-bold mr-1">{{ user.nickname }}</span> •
+			<div class="text-white text-sm mb-1 mt-2 leading-loose pl-2">
+				<router-link :to="`/profile/${currentList.owner}`" class="font-bold mr-1 hover:underline">{{
+					currentList.displayname
+				}}</router-link>
+				•
 				<span class="opacity-60 font-light ml-1"
-					>{{ currentList.followers }} followers, {{ posts.length }} {{ posts.length === 1 ? 'post' : 'posts' }}</span
+					>{{ currentList.followers }} {{ currentList.followers === 1 ? 'follower' : 'followers' }}, {{ posts.length }}
+					{{ posts.length === 1 ? 'post' : 'posts' }}</span
 				>
 			</div>
-			<div>
-				<button class="border border-white border-opacity-50 text-white px-2 py-1 text-sm rounded-md leading-tight">
+			<div class="pl-2">
+				<button
+					v-if="currentList.owner != user.uid && !isFollowing"
+					@click="setFollow(currentList.id)"
+					class="border border-white border-opacity-30 mt-1 hover:border-opacity-100 text-white px-2 py-1 text-sm rounded-md leading-tight"
+				>
 					Follow
+				</button>
+				<button
+					v-else-if="isFollowing"
+					@click="setUnFollow(currentList.id)"
+					class="border border-white border-opacity-30 mt-1 hover:border-opacity-100 text-white px-2 py-1 text-sm rounded-md leading-tight"
+				>
+					Following
 				</button>
 			</div>
 		</div>
@@ -110,14 +134,17 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted, onBeforeUnmount, markRaw } from 'vue';
-import { posts, listThumbs, dropColorCss } from '@/global/posts';
+import { posts, dropColorCss } from '@/global/posts';
 import { currentList } from '@/global/currents';
 import { user } from '@/global/user';
-import { lists } from '@/composables/getOwnedLists';
 import { currentModal } from '@/global/modal';
+import { setFollow } from '@/composables/setFollow';
+import { setUnFollow } from '@/composables/setUnFollow';
+import { isFollowing } from '@/global/data';
 
 export default defineComponent({
 	setup() {
+		const followers = ref();
 		const showMiniListPresentation = ref(false);
 		const presentationBar = ref() as any;
 		const handleScroll = (e: any) => {
@@ -141,14 +168,15 @@ export default defineComponent({
 		});
 
 		return {
-			
+			isFollowing,
 			handleAddPost,
 			showMiniListPresentation,
 			posts,
 			dropColorCss,
 			user,
-			listThumbs,
 			currentList,
+			setFollow,
+			setUnFollow,
 		};
 	},
 });

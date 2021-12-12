@@ -1,9 +1,9 @@
 import { collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from '@/firebase/config'
 import { ref } from 'vue'
+import { posts } from "@/global/posts"
 
 export const getPosts = (listid: string) => {
-    const posts = ref([] as any)
     try {
         const q = query(collection(db, 'lists', listid, 'posts'));
         onSnapshot(q, ({ docs }: any) => {
@@ -16,9 +16,6 @@ export const getPosts = (listid: string) => {
                 return doc
             })
         })
-        return posts
-
-
     } catch (e) {
         console.log(e);
     }

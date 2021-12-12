@@ -1,6 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import { average } from 'color.js'
-import { lists } from '@/composables/getOwnedLists';
+import { ownedLists } from '@/global/data';
 import { currentList } from './currents';
 export const posts = ref([] as any)
 export const selectedTag = ref('');
@@ -15,19 +15,13 @@ export const filteredPosts = computed(() => {
         .sort((a: any, b: any) => a.created - b.created)
 })
 
-
-export const listThumbs = computed(() => {
-    if (!lists.value.length || !currentList.value?.id) return []
-    return lists.value.find((list: any) => list.id === currentList.value.id).listThumbs
-})
-
-
-watch(listThumbs, async (thumbs) => {
-    if (!thumbs.length || !thumbs) {
+watch(currentList, async (list) => {
+    if (!list?.listThumbs?.length || !list?.listThumbs) {
+        console.log('no drops');
         dropColorCss.value = `0,0,0`
         return
     }
-    const avg = await average(thumbs[0])
+    const avg = await average(list.listThumbs[0])
     dropColorCss.value = `${avg[0]},${avg[1]},${avg[2]}`
 }, { deep: true, immediate: true })
 

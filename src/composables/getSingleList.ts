@@ -1,6 +1,5 @@
-import { collection, query, where, onSnapshot, getDoc, doc } from "firebase/firestore";
+import { getDoc, doc } from "firebase/firestore";
 import { db } from '@/firebase/config'
-import { ref } from 'vue'
 
 export const getSingleList = async (id: string) => {
     try {

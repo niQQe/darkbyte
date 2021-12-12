@@ -1,19 +1,26 @@
 <template>
-	<div class="flex flex-col h-full w-full overflow-hidden">
+	<div class="flex flex-col h-full w-full overflow-hidden" v-if="!loading">
 		<div
 			class="fixed top-0 left-0 w-full"
 			style="height: 400px; z-index: 1; background-image: linear-gradient(rgb(76, 79, 85), rgb(32 34 37))"
 		></div>
-		<div class="w-full relative space-x-5 z-10 flex items-center px-10" style="height: 460px">
-			<div>
+		<div class="w-full relative space-x-5 z-10 flex items-center px-10" style="min-height: 280px">
+			<div class="flex space-x-5">
 				<div class="w-36 h-36 rounded-full shadow-lg flex" style="background: #2a2a2c">
 					<span class="material-icons m-auto text-white" style="font-size: 72px"> link </span>
 				</div>
-			</div>
-			<div class="flex flex-col pt-10" v-if="user">
-				<div class="text-white text-sm uppercase">Profile</div>
-				<div class="text-white text-5xl font-bold">{{ user.nickname }}</div>
-				<div class="text-white text-xs mt-2">{{ lists.length }} public lists</div>
+				<div class="flex flex-col mt-auto" v-if="user && lists">
+					<div class="text-white text-sm uppercase">Profile</div>
+					<div class="text-white text-5xl font-bold">{{ user.displayname }}</div>
+					<div class="text-white text-xs mt-2">{{ lists.length }} public lists</div>
+					<button
+						@click="handleSendFriendRequest"
+						v-if="user.user != self.uid"
+						class="border mt-3 border-white border-opacity-30 hover:border-opacity-100 text-white px-2 py-1 text-sm rounded-md leading-tight"
+					>
+						Send friend request
+					</button>
+				</div>
 			</div>
 		</div>
 		<div class="bg-black bg-opacity-20 h-full relative z-10 p-4">
@@ -68,15 +75,52 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
-import { lists } from '@/composables/getOwnedLists';
-import { user } from '@/global/user';
+import { defineComponent, onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
+import { getOwnedLists } from '@/composables/getOwnedLists';
+import { getUser } from '@/composables/getUser';
+import { user as self } from '@/global/user';
+import { setFriendRequest } from '@/composables/setFriendRequest';
 
 export default defineComponent({
 	setup() {
+		const route = useRoute();
+		const lists = ref([] as any);
+		const user = ref();
+		const loading = ref(false);
+
+		watch(
+			route,
+			async () => {
+				if (route.path.includes('profile')) {
+					await handleGetUserAndLists();
+				}
+			},
+			{ deep: true }
+		);
+
+		const handleGetUserAndLists = async () => {
+			loading.value = true;
+			console.log('ROUTER');
+			console.log(route.params.id);
+			await getOwnedLists({ uid: route.params.id as string, endLocation: lists });
+			await getUser({ uid: route.params.id as string, endLocation: user });
+			loading.value = false;
+		};
+
+		const handleSendFriendRequest = async () => {
+			await setFriendRequest(user.value.user);
+		};
+
+		onMounted(async () => {
+			await handleGetUserAndLists();
+		});
 		return {
+			handleSendFriendRequest,
+			loading,
 			lists,
 			user,
+			self,
 		};
 	},
 });

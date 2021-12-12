@@ -25,9 +25,9 @@ export async function createContentWindow() {
 	// Create the browser window.
 
 	content = new BrowserWindow({
-		width: 650,
+		width: 1200,
 
-		height: 800,
+		height: 850,
 		autoHideMenuBar: true,
 		frame: false,
 		webPreferences: {
